@@ -1,0 +1,63 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.3
+// swift-module-flags: -target arm64e-apple-macos26.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -O -library-level api -module-name Coherence
+import Foundation
+import Swift
+
+public protocol CRType {}
+public protocol CRMergeable {}
+public protocol CRCodable {}
+public protocol PartialCRDT {}
+
+public struct CRKeyPath : Swift.Hashable {
+  public func hash(into hasher: inout Swift.Hasher)
+  public static func == (a: Coherence.CRKeyPath, b: Coherence.CRKeyPath) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+
+public protocol CRDT : Coherence.CRType, Coherence.CRMergeable, Coherence.CRCodable, Swift.Equatable {
+  associatedtype MutatingAction
+  associatedtype Partial : Coherence.PartialCRDT
+  func actionUndoingDifference(from other: Self) -> Self.MutatingAction?
+  func apply(_ action: Self.MutatingAction?)
+  func delta(_ context: Coherence.CRContext, from other: Self) -> Self.Partial?
+  mutating func merge(delta: Self.Partial) -> Swift.Bool
+  var context: Coherence.CRContext { get }
+  func newRefs(from other: Self) -> Swift.Set<Coherence.CRKeyPath>
+  func canMerge(delta: Self.Partial) -> Swift.Bool
+  func hasDelta(from other: Self) -> Swift.Bool
+}
+
+public protocol EncryptionDelegate {}
+
+@_hasMissingDesignatedInitializers
+public class CRContext {
+  public static func newTransientContext(uniqueAssetManager: Swift.Bool, encryptionDelegate: (any Coherence.EncryptionDelegate)?) -> Coherence.CRContext
+  @objc deinit
+}
+
+public struct Capsule<A> where A : Coherence.CRDT {
+  public func serializedData(_ context: Coherence.CRContext) throws -> Foundation.Data
+}
+
+public enum CRDataStoreBundleReadFileVersionPolicy {
+  case all
+  case current
+  case allMergingToFile
+}
+
+public enum CRCodableVersion {
+  case version1
+  case version2
+  case version3
+  case version4
+}
+
+@_hasMissingDesignatedInitializers
+public class CRDataStoreBundle<A> where A : Coherence.CRDT {
+  public static func read(_ context: Coherence.CRContext, url: Foundation.URL, fileFormatVersion: Swift.Int16?) throws -> Coherence.Capsule<A>
+  public static func read(_ context: Coherence.CRContext, url: Foundation.URL, fileVersionPolicy: Coherence.CRDataStoreBundleReadFileVersionPolicy, allowedEncodings: [Coherence.CRCodableVersion]?, allowedAppFormats: [Swift.Int16]?) throws -> Coherence.Capsule<A>
+  @objc deinit
+}

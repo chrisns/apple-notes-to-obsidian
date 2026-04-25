@@ -1,0 +1,10 @@
+/* The Ink plugin's CSS force-fills every <path> in a writing-embed preview
+ * (assuming tldraw's getWritingSvg outline-polygon shape format). When strokes
+ * are emitted as stroked centerline paths (dash:"solid") the force-fill turns
+ * them into filled blobs after lock/save. Reassert fill:none for any path that
+ * declares a stroke width — the polygon-style filled paths used by tldraw's
+ * own renderer don't set a stroke-width and so are unaffected. */
+.theme-light .ddc_ink_writing-embed-preview path[stroke-width],
+.theme-dark .ddc_ink_writing-embed-preview path[stroke-width] {
+  fill: none !important;
+}

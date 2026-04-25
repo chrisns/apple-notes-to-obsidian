@@ -1,0 +1,21 @@
+# Compiled Swift binaries — built by build.sh
+decode_pkdrawing
+decode_paper
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store
+
+# Test scratch
+scratch/
+*.bin
+*.json
+!shims/**/*.json
+
+# IDE
+.vscode/
+.idea/
