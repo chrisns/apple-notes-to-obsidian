@@ -4,6 +4,42 @@ A high-fidelity migrator from **Apple Notes** to **Obsidian**, with the part nob
 
 If you've been on Apple Notes for years and the only reason you've never moved is that your handwritten pages would either get rasterised or thrown away, this is the unlock.
 
+---
+
+## Run it
+
+```bash
+git clone https://github.com/chrisns/apple-notes-to-obsidian.git
+cd apple-notes-to-obsidian
+./install.sh ~/Documents/MyVault
+python3 migrate.py --sync ~/Documents/MyVault/Notes/Inbox
+```
+
+That's it. `install.sh` checks dependencies, builds the Swift decoders, drops the CSS fix into your vault, and registers the datetime properties. Then `migrate.py --sync` pulls every note across.
+
+You'll need three one-time things on your machine before the first run:
+
+1. **Full Xcode** installed (not just CommandLineTools) and selected: `sudo xcode-select -s /Applications/Xcode.app`. We link against private frameworks shipped only in the full SDK.
+2. **Pandoc**: `brew install pandoc`.
+3. **Full Disk Access** for your terminal: System Settings → Privacy & Security → Full Disk Access → add Terminal/iTerm. Apple Notes' SQLite is sandboxed; without this the first SQL read fails with "operation not permitted."
+
+And two clicks inside Obsidian after `install.sh`:
+
+1. Settings → Community plugins → browse → install **"Ink"** (DefenderOfBasic/obsidian-ink) and enable it.
+2. Settings → Appearance → CSS snippets → toggle **"ink-stroke-fill"** on.
+
+That's the full setup. Re-run `migrate.py --sync` any time to pick up new edits — it's idempotent and frontmatter-anchored, so you can move and rename migrated notes around the vault and sync still finds them.
+
+> **Tip:** start with `--limit 10` on a scratch vault to feel out the output before committing to the full migration.
+
+```bash
+python3 migrate.py --sync ~/Documents/MyVault/Notes/Inbox --limit 10
+python3 migrate.py --sync ~/Documents/MyVault/Notes/Inbox          # full
+python3 migrate.py --sync ~/Documents/MyVault/Notes/Inbox --force  # rebuild all
+```
+
+---
+
 ## Why I built this
 
 I have been on Notes.app for ages. Long enough that the iPad Apple Pencil pages, the corner-of-meeting scribbles, the back-of-envelope diagrams, the pre-talk braindumps, the 3am ideas — they have all stacked up in there. **Hundreds of handwritten pages I love and can't search.** Trapped, because Apple Notes' "scribble" format is not anything you can usefully export. Print to PDF rasterises it. Copy-paste rasterises it. The real strokes — the PencilKit data, the Paper bundles — are locked in a private CRDT format that Apple has never opened up.
@@ -74,93 +110,31 @@ What it doesn't migrate (yet):
 
 ---
 
-## Quick start
+## What `install.sh` does, and the manual equivalent
+
+If you'd rather drive the install yourself:
 
 ```bash
-# 1. Clone & build the Swift decoders
-git clone https://github.com/chrisns/apple-notes-to-obsidian.git
-cd apple-notes-to-obsidian
-./build.sh                           # produces decode_pkdrawing + decode_paper
-
-# 2. Drop a one-time CSS snippet into your vault so the Ink renders cleanly
-mkdir -p /path/to/vault/.obsidian/snippets
-cp obsidian/snippets/ink-stroke-fill.css /path/to/vault/.obsidian/snippets/
-
-# (then enable "ink-stroke-fill" under Settings → Appearance → CSS snippets)
-
-# 3. Optional: declare created/modified as datetime properties so Obsidian's
-#    Properties panel renders them with the right widget. See §Setup below.
-
-# 4. Sync everything
-python3 migrate.py --sync /path/to/vault/Notes/Inbox
+./build.sh                                                # builds decode_pkdrawing + decode_paper
+pip install fractional-indexing                           # tldraw shape-index format
+cp obsidian/snippets/ink-stroke-fill.css <vault>/.obsidian/snippets/
+# add {"types": {"created":"datetime","modified":"datetime"}} to <vault>/.obsidian/types.json
 ```
 
-That's it. Re-run any time. Sync is one-way (Notes → Obsidian), idempotent, and self-healing — see [§ Sync semantics](#sync-semantics).
+Why each piece:
 
----
+- **`./build.sh`** compiles two Swift CLIs: `decode_pkdrawing` (handles the older `com.apple.drawing.2` PencilKit blobs) and `decode_paper` (handles modern Paper bundles via the Coherence + PaperKit shims in `shims/`). Needs full Xcode for the private-framework `.tbd` stubs.
+- **`fractional-indexing`** generates tldraw-compatible shape index keys (`a0`, `a1`, `aV`, …). Naive `a0001`-style padding fails tldraw's validator.
+- **The CSS snippet** works around an Ink-plugin bug where every stroke `<path>` is force-filled, turning thin lines into filled blobs. The snippet reasserts `fill: none` on stroked paths. One line of CSS, night-and-day rendering difference.
+- **`types.json`** entries make Obsidian's Properties panel render the dates with calendar widgets and sort correctly in the file explorer.
 
-## Setup in detail
-
-### Prerequisites
-
-- **macOS** (10.15+). Tested on macOS 26.4 (Tahoe). The Swift Paper decoder uses public PaperKit APIs that arrived in macOS 26; older releases need the alternative path described below.
-- **Xcode** installed and selected (`sudo xcode-select -s /Applications/Xcode.app`). Not just the Command Line Tools — we link against the SDK's `PrivateFrameworks/Coherence.framework`.
-- **Python 3.10+** with the `fractional-indexing` package: `pip install fractional-indexing`.
-- **Pandoc**: `brew install pandoc`.
-- **Obsidian** with the **[Ink plugin](https://github.com/DefenderOfBasic/obsidian-ink)** installed and enabled. Install via Community Plugins → search for "Ink".
-- **Full Disk Access** for your terminal (System Settings → Privacy & Security → Full Disk Access). Apple Notes' SQLite lives in a Container that's protected. Without this you'll get "operation not permitted" errors on the first SQL read.
-- **AppleScript permission** for your terminal to control Notes: macOS will prompt the first time you run; click Allow.
-
-### Build the Swift binaries
-
-```bash
-./build.sh
-```
-
-This produces two CLIs in the repo root:
-
-- `decode_pkdrawing` — takes a raw `PKDrawing` blob (extracted from `ZICCLOUDSYNCINGOBJECT.ZMERGEABLEDATA1` for `com.apple.drawing.2` rows) and emits a JSON description of every stroke (paths, ink, transform, pressure).
-- `decode_paper` — takes a Paper bundle directory (`*.bundle`) and emits the same JSON shape. Internally goes Coherence → `Capsule<PaperKit.Paper>` → walk the capsule's reference graph → extract every `PKStrokeStruct`. The hand-crafted shims in `shims/` are how we bridge to the (Swift-mangled but `.swiftinterface`-less) `Coherence.framework`.
-
-### Obsidian-side setup
-
-1. **Install the Ink plugin** (Community Plugins → Ink).
-2. **Drop the CSS snippet** at `<vault>/.obsidian/snippets/ink-stroke-fill.css` (copy from `obsidian/snippets/`). Enable it under Settings → Appearance → CSS snippets.
-
-   _Why this is required:_ Ink's bundled CSS force-fills every `<path>` in a writing-embed preview, on the assumption that previewUri SVGs are closed-outline polygons (which is what tldraw's own `getWritingSvg` generates). When strokes are emitted as stroked centerline paths (the only sensible format for thin-line rendering), that force-fill turns them into filled blobs. The snippet reasserts `fill: none` on any path that declares a `stroke-width`. One line of CSS. Total night-and-day improvement to the rendering.
-
-3. **Optional but recommended — datetime properties.** Add to `<vault>/.obsidian/types.json`:
-
-   ```json
-   {
-     "types": {
-       "created": "datetime",
-       "modified": "datetime"
-     }
-   }
-   ```
-
-   Now Obsidian's Properties panel shows the dates with the calendar/clock widget instead of as a plain string. Sortable in the file explorer too.
-
-### Run
-
-Single note:
+### Single-note runs
 
 ```bash
 python3 migrate.py "x-coredata://<store-uuid>/ICNote/p<pk>" /path/to/vault/Notes/Inbox
 ```
 
-(You won't usually need to type that; sync mode is what you want.)
-
-Sync mode — one-way Notes → Obsidian, **idempotent**, **frontmatter-anchored**:
-
-```bash
-python3 migrate.py --sync /path/to/vault/Notes/Inbox            # full sync
-python3 migrate.py --sync /path/to/vault/Notes/Inbox --limit 20 # top N most recent
-python3 migrate.py --sync /path/to/vault/Notes/Inbox --force    # rebuild all
-```
-
-The script picks up notes that have changed since the last run (compares Apple Notes' `modified` against the `modified` recorded in the existing markdown's frontmatter). New notes go to the inbox; updated notes are written wherever they currently live in the vault — so you can move and rename them after the initial migration and sync still finds them by `source-id`. See [§ Sync semantics](#sync-semantics).
+Useful for debugging a specific note. You won't usually need this; `--sync` is what you want day to day.
 
 ---
 
@@ -293,6 +267,7 @@ The Coherence shim is the cleanest of these. Apple's own framework decodes its o
 
 ```
 .
+├── install.sh                  One-shot installer (deps + build + vault setup)
 ├── build.sh                    Compile the two Swift decoders
 ├── migrate.py                  Main orchestrator + CLI (sync, single-note)
 ├── ink_writer.py               Build .writing JSON files from stroke data
