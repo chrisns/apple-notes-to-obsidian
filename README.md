@@ -29,6 +29,26 @@ If that's where you are, read on.
 
 ---
 
+## What it looks like
+
+Two real notes from my own vault, before and after. Left: Apple Notes. Right: the same note after migration, rendered by the Ink plugin in Obsidian.
+
+### "Scanner"
+
+| Apple Notes | Obsidian (Ink plugin) |
+| --- | --- |
+| ![Scanner note in Apple Notes](docs/screenshots/notes-scanner.png) | ![Scanner note in Obsidian](docs/screenshots/obsidian-scanner.png) |
+
+### "Maslow's order"
+
+| Apple Notes | Obsidian (Ink plugin) |
+| --- | --- |
+| ![Maslow's order note in Apple Notes](docs/screenshots/notes-maslow.png) | ![Maslow's order note in Obsidian](docs/screenshots/obsidian-maslow.png) |
+
+The strokes on the right are real vector strokes — selectable, editable, ink-on-top works, dark-mode flips them automatically.
+
+---
+
 ## What it actually migrates
 
 | Apple Notes content | Result in Obsidian |
