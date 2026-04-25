@@ -36,8 +36,22 @@ if [ ! -d "$SDK_PRIVATE_F" ]; then
   missing+=("Xcode SDK PrivateFrameworks (run: sudo xcode-select -s /Applications/Xcode.app)")
 fi
 
+# Full Disk Access probe — Apple Notes' SQLite lives in a TCC-protected
+# Group Container. Reading one byte is enough to surface a permission error
+# without us having to interpret an obscure errno later.
+NOTES_DB="$HOME/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite"
+if [ -e "$NOTES_DB" ]; then
+  if ! head -c 1 "$NOTES_DB" >/dev/null 2>&1; then
+    missing+=("Full Disk Access for $(basename "$SHELL") / your terminal — System Settings → Privacy & Security → Full Disk Access")
+  fi
+else
+  echo "⚠  Apple Notes SQLite not found at: $NOTES_DB"
+  echo "   Open Notes.app at least once to create it, then re-run."
+fi
+
 if [ "${#missing[@]}" -gt 0 ]; then
-  echo "✗ missing: ${missing[*]}" >&2
+  echo "✗ missing:" >&2
+  for m in "${missing[@]}"; do echo "   - $m" >&2; done
   exit 1
 fi
 
@@ -78,10 +92,6 @@ cat <<MSG
 Two more one-time clicks inside Obsidian:
   1. Settings → Community plugins → install "Ink" (daledesilva/obsidian_ink)
   2. Settings → Appearance → CSS snippets → enable "ink-stroke-fill"
-
-And one in System Settings:
-  3. Privacy & Security → Full Disk Access → add your terminal
-     (Apple Notes' SQLite is sandboxed; first run will fail otherwise)
 
 Then run:
   python3 migrate.py --sync "$VAULT/Notes/Inbox"
