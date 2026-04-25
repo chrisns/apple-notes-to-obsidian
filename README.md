@@ -1,6 +1,6 @@
 # apple-notes-to-obsidian
 
-A high-fidelity migrator from **Apple Notes** to **Obsidian**, with the part nobody else gets right: **handwritten drawings come across as live, editable vector strokes inside Obsidian's [Ink plugin](https://github.com/DefenderOfBasic/obsidian-ink)**, not as flat PNG screenshots.
+A high-fidelity migrator from **Apple Notes** to **Obsidian**, with the part nobody else gets right: **handwritten drawings come across as live, editable vector strokes inside Obsidian's [Ink plugin](https://github.com/daledesilva/obsidian_ink)**, not as flat PNG screenshots.
 
 If you've been on Apple Notes for years and the only reason you've never moved is that your handwritten pages would either get rasterised or thrown away, this is the unlock.
 
@@ -25,7 +25,7 @@ You'll need three one-time things on your machine before the first run:
 
 And two clicks inside Obsidian after `install.sh`:
 
-1. Settings → Community plugins → browse → install **"Ink"** (DefenderOfBasic/obsidian-ink) and enable it.
+1. Settings → Community plugins → browse → install **"Ink"** (daledesilva/obsidian_ink) and enable it.
 2. Settings → Appearance → CSS snippets → toggle **"ink-stroke-fill"** on.
 
 That's the full setup. Re-run `migrate.py --sync` any time to pick up new edits — it's idempotent and frontmatter-anchored, so you can move and rename migrated notes around the vault and sync still finds them.
@@ -46,7 +46,7 @@ I have been on Notes.app for ages. Long enough that the iPad Apple Pencil pages,
 
 For a long time the answer was "stay on Apple Notes." It was the least-bad option.
 
-The Obsidian **[Ink plugin](https://github.com/DefenderOfBasic/obsidian-ink)** changes the calculus. It is _just about good enough_ now. It gives you:
+The Obsidian **[Ink plugin](https://github.com/daledesilva/obsidian_ink)** changes the calculus. It is _just about good enough_ now. It gives you:
 
 - a real tldraw canvas embedded inline in your markdown
 - ruled-paper styling and a proper writing-pen tool
@@ -298,7 +298,7 @@ The Coherence shim is the cleanest of these. Apple's own framework decodes its o
 
 ## Acknowledgements
 
-- The Obsidian **[Ink plugin](https://github.com/DefenderOfBasic/obsidian-ink)** does the rendering. It is what made any of this worth doing.
+- The Obsidian **[Ink plugin](https://github.com/daledesilva/obsidian_ink)** does the rendering. It is what made any of this worth doing.
 - **[apple_cloud_notes_parser](https://github.com/threeplanetssoftware/apple_cloud_notes_parser)** (Ruby) is the canonical reference for the Apple Notes SQLite schema. I didn't use the code directly but the documentation of the protobuf layout was invaluable.
 - **tldraw** for the canvas format the Ink plugin builds on.
 - **PencilKit** team at Apple, even if they made Paper bundles harder than they needed to be.

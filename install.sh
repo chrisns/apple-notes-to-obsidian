@@ -76,7 +76,7 @@ cat <<MSG
 ✓ ready
 
 Two more one-time clicks inside Obsidian:
-  1. Settings → Community plugins → install "Ink" (DefenderOfBasic/obsidian-ink)
+  1. Settings → Community plugins → install "Ink" (daledesilva/obsidian_ink)
   2. Settings → Appearance → CSS snippets → enable "ink-stroke-fill"
 
 And one in System Settings:
